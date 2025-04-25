@@ -4,6 +4,7 @@ import numpy as np
 import pydeck as pdk
 import plotly.express as px
 import time
+import datetime
 
 # App title and config
 st.set_page_config(
@@ -148,6 +149,8 @@ def project_creation_page():
         with col2:
             budget = st.number_input("Estimated Budget ($)", min_value=1000, value=50000, key="budget_input", on_change=lambda: st.session_state.update(budget_updated=True, project_area_updated=True, materials_updated=True))
             location = st.text_input("Project Location", "New York, NY")
+            st.date_input("Start Date", key="start_date")
+            st.date_input("End Date", key="end_date")
             
             # Real-time budget analysis
             if 'budget_updated' in st.session_state:
@@ -201,6 +204,8 @@ def project_creation_page():
                     'area': project_area,
                     'budget': budget,
                     'location': location,
+                    'start_date': st.session_state.get('start_date', ''),
+                    'end_date': st.session_state.get('end_date', ''),
                     'materials': st.session_state.get('selected_materials', []),
                     'progress': 0  # Initialize progress
                 }
@@ -416,6 +421,10 @@ def project_details_page():
                                                   value=project['budget'], key=f"edit_budget_{project_idx}")
                 project['location'] = st.text_input("Project Location", project['location'], 
                                                   key=f"edit_location_{project_idx}")
+                project['start_date'] = st.date_input("Start Date", value=project.get('start_date', datetime.date.today()), 
+                                                  key=f"edit_start_date_{project_idx}")
+                project['end_date'] = st.date_input("End Date", value=project.get('end_date', datetime.date.today() + datetime.timedelta(days=30)), 
+                                                  key=f"edit_end_date_{project_idx}")
                 
         # Project progress slider
         progress = st.slider(
@@ -460,6 +469,8 @@ def project_details_page():
                 'area': st.session_state.get('project_area', 0),
                 'budget': st.session_state.get('budget', 0),
                 'location': st.session_state.get('location', ''),
+                'start_date': st.session_state.get('start_date', ''),
+                'end_date': st.session_state.get('end_date', ''),
                 'materials': st.session_state.get('selected_materials', []),
                 'progress': st.session_state.get('progress', 0)
             }
@@ -648,26 +659,49 @@ def gantt_chart_page():
     all_tasks = []
     
     for project in st.session_state.projects:
-        # Base tasks for each project
-        tasks = [
-            [f"{project['name']} - Planning", '2023-01-01', '2023-01-31', 100, 'General'],
-            [f"{project['name']} - Design", '2023-02-01', '2023-02-28', 100, 'General']
-        ]
-        
-        # Add material-specific tasks
-        if 'materials' in project and project['materials']:
-            materials = project['materials']
-            if 'Concrete' in materials:
-                tasks.append([f"{project['name']} - Foundation", '2023-01-01', '2023-02-10', 100, 'Concrete'])
-            if 'Steel' in materials:
-                tasks.append([f"{project['name']} - Structure", '2023-02-15', '2023-03-15', 75, 'Steel'])
-            if 'Brick' in materials or 'Wood' in materials:
-                tasks.append([f"{project['name']} - Walls", '2023-03-20', '2023-04-05', 50, 'Brick/Wood'])
-            if 'Wood' in materials:
-                tasks.append([f"{project['name']} - Roof", '2023-04-10', '2023-04-30', 25, 'Wood'])
-            tasks.append([f"{project['name']} - Finishing", '2023-05-01', '2023-06-15', 0, 'Paint'])
-        
-        all_tasks.extend(tasks)
+        # Display project dates if available
+        if 'start_date' in project and 'end_date' in project:
+            st.subheader(f"{project['name']} Timeline")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Start Date", str(project['start_date']))
+            with col2:
+                st.metric("End Date", str(project['end_date']))
+            
+            # Calculate duration in days
+            duration = (project['end_date'] - project['start_date']).days
+            
+            # Base tasks for each project using actual dates
+            tasks = [
+                [f"{project['name']} - Planning", project['start_date'], 
+                 project['start_date'] + pd.Timedelta(days=duration*0.2), 100, 'General'],
+                [f"{project['name']} - Design", project['start_date'] + pd.Timedelta(days=duration*0.2),
+                 project['start_date'] + pd.Timedelta(days=duration*0.4), 100, 'General']
+            ]
+            
+            # Add material-specific tasks using actual dates
+            if 'materials' in project and project['materials']:
+                materials = project['materials']
+                if 'Concrete' in materials:
+                    tasks.append([f"{project['name']} - Foundation", project['start_date'], 
+                                 project['start_date'] + pd.Timedelta(days=duration*0.3), 100, 'Concrete'])
+                if 'Steel' in materials:
+                    tasks.append([f"{project['name']} - Structure", 
+                                 project['start_date'] + pd.Timedelta(days=duration*0.3),
+                                 project['start_date'] + pd.Timedelta(days=duration*0.6), 75, 'Steel'])
+                if 'Brick' in materials or 'Wood' in materials:
+                    tasks.append([f"{project['name']} - Walls", 
+                                 project['start_date'] + pd.Timedelta(days=duration*0.5),
+                                 project['start_date'] + pd.Timedelta(days=duration*0.7), 50, 'Brick/Wood'])
+                if 'Wood' in materials:
+                    tasks.append([f"{project['name']} - Roof", 
+                                 project['start_date'] + pd.Timedelta(days=duration*0.7),
+                                 project['start_date'] + pd.Timedelta(days=duration*0.8), 25, 'Wood'])
+                tasks.append([f"{project['name']} - Finishing", 
+                             project['start_date'] + pd.Timedelta(days=duration*0.8),
+                             project['end_date'], project.get('progress', 0), 'Paint'])
+            
+            all_tasks.extend(tasks)
     
     tasks_df = pd.DataFrame(all_tasks, columns=['Task', 'Start', 'End', 'Progress', 'Material'])
     
@@ -696,7 +730,14 @@ def gantt_chart_page():
     
     # Task details
     selected_task = st.selectbox("Select Task", tasks_df['Task'])
-    task_data = tasks_df[tasks_df['Task'] == selected_task].iloc[0]
+    
+    # Check if task exists before accessing
+    matching_tasks = tasks_df[tasks_df['Task'] == selected_task]
+    if len(matching_tasks) == 0:
+        st.warning(f"Task '{selected_task}' not found")
+        return
+        
+    task_data = matching_tasks.iloc[0]
     
     st.subheader(f"{selected_task} Details")
     col1, col2 = st.columns(2)
