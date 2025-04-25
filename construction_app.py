@@ -201,14 +201,16 @@ def project_creation_page():
                     'area': project_area,
                     'budget': budget,
                     'location': location,
-                    'materials': st.session_state.get('selected_materials', [])
+                    'materials': st.session_state.get('selected_materials', []),
+                    'progress': 0  # Initialize progress
                 }
                 
                 if 'projects' not in st.session_state:
                     st.session_state.projects = []
                 
                 if existing_idx is not None:
-                    # Update existing project
+                    # Preserve existing progress when updating
+                    current_project['progress'] = st.session_state.projects[existing_idx].get('progress', 0)
                     st.session_state.projects[existing_idx] = current_project
                     st.success(f"Project '{project_name}' updated!")
                 else:
@@ -216,7 +218,8 @@ def project_creation_page():
                     st.session_state.projects.append(current_project)
                     st.success(f"Project '{project_name}' saved!")
                 
-                # Force refresh to show changes
+                # Clear form and force refresh
+                st.session_state.project_name = ""
                 st.rerun()
 
     # Material selection and cost calculator
@@ -355,6 +358,7 @@ def project_creation_page():
             
             # Enhanced report with AI insights
             report_data = filtered_data.copy()
+i see            recommendations = get_ai_recommendations(project_type, budget, project_area, location)
             report_data['AI Recommendation'] = report_data['Material'].isin(recommendations['Material'])
             
             st.download_button(
@@ -393,6 +397,10 @@ def project_details_page():
         # Get selected project data
         project_idx = next(i for i, p in enumerate(st.session_state.projects) if p['name'] == selected_project)
         project = st.session_state.projects[project_idx]
+        
+        # Ensure project has progress value
+        if 'progress' not in project:
+            project['progress'] = 0
         
         # Editable project details
         with st.expander("Edit Project Details", expanded=True):
