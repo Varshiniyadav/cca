@@ -1,0 +1,10 @@
+Material,Unit Cost,Carbon Footprint,Use Case,Sustainability Score,Recyclability
+Concrete,100,120,Foundation,3,0.3
+Steel,150,200,Structure,2,0.9
+Wood,80,50,Interior,4,0.7
+Brick,120,80,Exterior,3,0.4
+Glass,200,150,Windows,2,0.8
+Bamboo,90,30,Flooring,5,0.9
+Recycled Steel,170,60,Structure,4,1.0
+Hempcrete,110,20,Walls,5,0.8
+Cross-Laminated Timber,130,40,Structure,5,0.9
