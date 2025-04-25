@@ -199,7 +199,8 @@ def project_creation_page():
                     'name': project_name,
                     'type': project_type,
                     'area': project_area,
-                    'budget': budget,                    'location': location,
+                    'budget': budget,
+                    'location': location,
                     'materials': st.session_state.get('selected_materials', []),
                     'progress': 0  # Initialize progress
                 }
@@ -217,8 +218,7 @@ def project_creation_page():
                     st.session_state.projects.append(current_project)
                     st.success(f"Project '{project_name}' saved!")
                 
-                # Clear form and force refresh
-                st.session_state.project_name = ""
+                # Clear form by rerunning
                 st.rerun()
 
     # Material selection and cost calculator
@@ -420,9 +420,9 @@ def project_details_page():
         # Project progress slider
         progress = st.slider(
             "Project Completion",
-            0, 100, project['progress'],
+            0, 100, project.get('progress', 0),
             key=f"progress_{project['name']}",
-            on_change=lambda: update_project_progress(project['name'], st.session_state[f"progress_{project['name']}"])
+            on_change=lambda: update_project_progress(project['name'], st.session_state.get(f"progress_{project['name']}", 0))
         )
         
         # Update session state with any changes
