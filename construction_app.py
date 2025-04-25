@@ -199,8 +199,7 @@ def project_creation_page():
                     'name': project_name,
                     'type': project_type,
                     'area': project_area,
-                    'budget': budget,
-                    'location': location,
+                    'budget': budget,                    'location': location,
                     'materials': st.session_state.get('selected_materials', []),
                     'progress': 0  # Initialize progress
                 }
@@ -358,7 +357,7 @@ def project_creation_page():
             
             # Enhanced report with AI insights
             report_data = filtered_data.copy()
-i see            recommendations = get_ai_recommendations(project_type, budget, project_area, location)
+            recommendations = get_ai_recommendations(project_type, budget, project_area, location)
             report_data['AI Recommendation'] = report_data['Material'].isin(recommendations['Material'])
             
             st.download_button(
